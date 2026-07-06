@@ -1,22 +1,78 @@
 // 核心净化函数定义
 function purifyChinese(text) {
   if (!text) return "";
-  // 1. 保留双换行作为段落分界，单换行直接抹除
-  let processed = text.replace(/\n\n+/g, "【段落占位】");
-  processed = processed.replace(/\n/g, "");
   
-  // 2. 去除两个中文字符/标点之间的空格
-  // 中文字符与标点的正则范围包含常用汉字 [\u4e00-\u9fa5] 及标点 [\u3000-\u303f\uff00-\uffef]
-  processed = processed.replace(/(?<=[\u4e00-\u9fa5\u3000-\u303f\uff00-\uffef])\s+(?=[\u4e00-\u9fa5\u3000-\u303f\uff00-\uffef])/g, "");
+  // 1. 按原始换行分割成行
+  const rawLines = text.split('\n');
+  const processedLines = [];
   
-  // 3. 将中英文交界处如果没有空格的，自动加空格以规范排版
-  processed = processed.replace(/([\u4e00-\u9fa5])([a-zA-Z0-9])/g, "$1 $2");
-  processed = processed.replace(/([a-zA-Z0-9])([\u4e00-\u9fa5])/g, "$1 $2");
+  // 2. 清理每行内的多余空格
+  for (let i = 0; i < rawLines.length; i++) {
+    let line = rawLines[i].trim();
+    
+    // 去除汉字/中文标点之间的莫名空格
+    line = line.replace(/(?<=[\u4e00-\u9fa5\u3000-\u303f\uff00-\uffef])\s+(?=[\u4e00-\u9fa5\u3000-\u303f\uff00-\uffef])/g, "");
+    // 中英文边界处规范化地加单个空格
+    line = line.replace(/([\u4e00-\u9fa5])([a-zA-Z0-9])/g, "$1 $2");
+    line = line.replace(/([a-zA-Z0-9])([\u4e00-\u9fa5])/g, "$1 $2");
+    
+    processedLines.push(line);
+  }
   
-  // 还原段落换行
-  processed = processed.replace(/【段落占位】/g, "\n\n");
+  const paragraphs = [];
+  let currentParagraph = "";
   
-  return processed.trim();
+  for (let i = 0; i < processedLines.length; i++) {
+    const line = processedLines[i];
+    
+    // 遇到本就是空行的情况，判定分段
+    if (line === "") {
+      if (currentParagraph !== "") {
+        paragraphs.push(currentParagraph);
+        currentParagraph = "";
+      }
+      continue;
+    }
+    
+    if (currentParagraph === "") {
+      currentParagraph = line;
+    } else {
+      let shouldBreak = false;
+      
+      // 获取上一行的清洗后文本及最后一个字符
+      const prevLine = processedLines[i - 1] || "";
+      const lastChar = prevLine.slice(-1);
+      
+      // 智能分段判断规则：
+      // 1. 上一行以句末标点结尾（允许后面带类似 [1] 的引用标号），且整行长度较短（小于 35 个字），极有可能是段落结束
+      if (/([。？！?!；;]|\.\s*)\s*(?:\[\d+\])?$/.test(prevLine) && prevLine.length < 35) {
+        shouldBreak = true;
+      }
+      // 2. 上一行极短（小于 12 个字），且该行不包含任何主要句中/句末标点（如逗号、句号、冒号等，括号除外），通常是小标题或段首句
+      else if (prevLine.length < 12 && !/[，。？！、：；,.:;!?]/.test(prevLine)) {
+        shouldBreak = true;
+      }
+      // 3. 当前行本身是以明显的段落/列表标记、或者标题序号开头
+      // 例如：“（一）”、“一、”、“1.”、“[1]”、“-”、“•” 等
+      else if (/^(?:[（\(][一二三四五六七八九十0-9]+[）\)]|[一二三四五六七八九十]+[、]|[0-9]+[\.、]|[-•●\*]|\u25cf)/.test(line)) {
+        shouldBreak = true;
+      }
+      
+      if (shouldBreak) {
+        paragraphs.push(currentParagraph);
+        currentParagraph = line;
+      } else {
+        // 合并：中文字符之间不加换行和空格
+        currentParagraph += line;
+      }
+    }
+  }
+  
+  if (currentParagraph !== "") {
+    paragraphs.push(currentParagraph);
+  }
+  
+  return paragraphs.join("\n\n");
 }
 
 function purifyEnglish(text) {
@@ -57,8 +113,8 @@ function runCleanerTests() {
   console.group("🧪 核心净化规则单元测试");
   
   // 测试用例 1: 中文段落与空格去除
-  const inputZh = "我 们  在 看 文  献\n。 粘贴  的时 候 总 是 带着 \n 格式 。\n\n这 是 第二段。";
-  const expectedZh = "我们在看文献。粘贴的时候总是带着格式。\n\n这是第二段。";
+  const inputZh = "我 们  在 看 文  献 ，\n 粘贴  的时 候 总 是 带着 原 有 的 格式 。\n\n这 是 第二段。";
+  const expectedZh = "我们在看文献，粘贴的时候总是带着原有的格式。\n\n这是第二段。";
   const resultZh = purifyText(inputZh, "zh");
   console.assert(resultZh === expectedZh, `[ZH] 预期:\n"${expectedZh}"\n但得到:\n"${resultZh}"`);
 
