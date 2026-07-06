@@ -31,8 +31,11 @@ function purifyChinese(text) {
   // 0. 先将全角英文字母与数字转换为半角
   text = toDBC(text);
   
-  // 1. 按原始换行分割成行
-  const rawLines = text.split('\n');
+  // 0.1 核心压缩：将文本中所有的多空行合并/压缩为单换行，消除 PDF 假空行对段落划分的干扰
+  let cleanedText = text.replace(/\n\n+/g, "\n");
+  
+  // 1. 按换行分割成行
+  const rawLines = cleanedText.split('\n');
   const processedLines = [];
   
   // 2. 清理每行内的多余空格
@@ -41,6 +44,10 @@ function purifyChinese(text) {
     
     // 去除汉字/中文标点之间的莫名空格
     line = line.replace(/(?<=[\u4e00-\u9fa5\u3000-\u303f\uff00-\uffef])\s+(?=[\u4e00-\u9fa5\u3000-\u303f\uff00-\uffef])/g, "");
+    
+    // 自动将空格隔开的独立英文大写/小写字母缩写进行合并（如 I A C S -> IACS, U N I V E R S I T Y -> UNIVERSITY）
+    line = line.replace(/\b([a-zA-Z])\s+(?=[a-zA-Z]\b)/g, "$1");
+    
     // 中英文边界处规范化地加单个空格
     line = line.replace(/([\u4e00-\u9fa5])([a-zA-Z0-9])/g, "$1 $2");
     line = line.replace(/([a-zA-Z0-9])([\u4e00-\u9fa5])/g, "$1 $2");
@@ -54,14 +61,7 @@ function purifyChinese(text) {
   for (let i = 0; i < processedLines.length; i++) {
     const line = processedLines[i];
     
-    // 遇到本就是空行的情况，判定分段
-    if (line === "") {
-      if (currentParagraph !== "") {
-        paragraphs.push(currentParagraph);
-        currentParagraph = "";
-      }
-      continue;
-    }
+    if (line === "") continue;
     
     if (currentParagraph === "") {
       currentParagraph = line;
@@ -77,8 +77,11 @@ function purifyChinese(text) {
       if (/([。？！?!；;]|\.\s*)\s*(?:\[\d+\])?$/.test(prevLine) && prevLine.length < 35) {
         shouldBreak = true;
       }
-      // 2. 上一行极短（小于 12 个字），且该行不包含任何主要句中/句末标点（如逗号、句号、冒号等，括号除外），通常是小标题或段首句
-      else if (prevLine.length < 12 && !/[，。？！、：；,.:;!?]/.test(prevLine)) {
+      // 2. 上一行极短（小于 15 个字），且该行不包含任何主要句中/句末标点
+      // 安全锁：如果当前行开头 6 个字内就含有句末/句中主要标点（例如：“助。第二” 里的 “。”），说明上一行只是句尾折断，不能当作标题，不予断开！
+      else if (prevLine.length < 15 && 
+               !/[，。？！、：；,.:;!?]/.test(prevLine) && 
+               !/[，。？！、：；,.:;!?]/.test(line.substring(0, 6))) {
         shouldBreak = true;
       }
       // 3. 当前行本身是以明显的段落/列表标记、或者标题序号开头
@@ -106,18 +109,19 @@ function purifyChinese(text) {
 
 function purifyEnglish(text) {
   if (!text) return "";
-  // 0. 先将全角英文字母与数字转换为半角
+  // 1. 先将全角英文字母与数字转换为半角
   text = toDBC(text);
-  // 1. 合并英文连字符 + 换行 (例如 hyphen-\nated 转换为 hyphenated)
+  
+  // 2. 合并英文连字符 + 换行
   let processed = text.replace(/(\w+)-\s*\n\s*(\w+)/g, "$1$2");
   
-  // 2. 保留双换行及以上作为段落分隔
+  // 3. 保留双换行及以上作为段落分隔
   processed = processed.replace(/\n\n+/g, "【段落占位】");
   
-  // 3. 将单换行替换为空格
+  // 4. 将单换行替换为空格
   processed = processed.replace(/\n/g, " ");
   
-  // 4. 将两个以上的空格合并为单空格
+  // 5. 将两个以上的空格合并为单空格
   processed = processed.replace(/\s{2,}/g, " ");
   
   // 还原段落换行
