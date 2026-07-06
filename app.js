@@ -79,11 +79,92 @@ function runCleanerTests() {
   console.groupEnd();
 }
 
-// Node.js 环境下直接运行测试
-if (typeof window === 'undefined') {
-  runCleanerTests();
-} else {
-  // 暴露出全局测试接口，以便在浏览器控制台调用
+// 仅在浏览器环境下执行 DOM 绑定
+if (typeof window !== 'undefined') {
+  // 暴露接口便于控制台调试
   window.runCleanerTests = runCleanerTests;
   window.purifyText = purifyText;
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const inputArea = document.getElementById('input-area');
+    const outputArea = document.getElementById('output-area');
+    const inputWordCount = document.getElementById('input-word-count');
+    const outputWordCount = document.getElementById('output-word-count');
+    const switchAutoCopy = document.getElementById('switch-auto-copy');
+    const btnCopy = document.getElementById('btn-copy');
+    const btnClear = document.getElementById('btn-clear');
+    
+    // 获取当前选中的模式
+    function getSelectedMode() {
+      return document.querySelector('input[name="purify-mode"]:checked').value;
+    }
+
+    // 核心处理与更新逻辑
+    function handleProcessing() {
+      const rawText = inputArea.value;
+      const mode = getSelectedMode();
+      const purified = purifyText(rawText, mode);
+      
+      outputArea.value = purified;
+      
+      // 字数更新
+      inputWordCount.textContent = `字数: ${rawText.length}`;
+      outputWordCount.textContent = `字数: ${purified.length}`;
+      
+      // 自动复制
+      if (switchAutoCopy.checked && purified.trim() !== '') {
+        performCopy(purified, true);
+      }
+    }
+
+    // 复制逻辑
+    function performCopy(text, isAuto = false) {
+      if (!navigator.clipboard) {
+        if (!isAuto) alert("当前环境不支持 Clipboard API，请手动复制右侧框中文本。");
+        return;
+      }
+      navigator.clipboard.writeText(text).then(() => {
+        if (isAuto) {
+          // 自动复制成功闪烁绿边框
+          outputArea.classList.add('auto-copy-flash');
+          setTimeout(() => outputArea.classList.remove('auto-copy-flash'), 1000);
+        } else {
+          // 手动复制更改按钮文字
+          const oldText = btnCopy.textContent;
+          btnCopy.textContent = "已复制！";
+          btnCopy.classList.add('btn-success');
+          setTimeout(() => {
+            btnCopy.textContent = oldText;
+            btnCopy.classList.remove('btn-success');
+          }, 1500);
+        }
+      }).catch(err => {
+        console.error("复制失败:", err);
+      });
+    }
+
+    // 事件绑定
+    inputArea.addEventListener('input', handleProcessing);
+    
+    document.querySelectorAll('input[name="purify-mode"]').forEach(radio => {
+      radio.addEventListener('change', handleProcessing);
+    });
+
+    btnCopy.addEventListener('click', () => {
+      if (outputArea.value.trim() !== '') {
+        performCopy(outputArea.value, false);
+      }
+    });
+
+    btnClear.addEventListener('click', () => {
+      inputArea.value = '';
+      outputArea.value = '';
+      inputWordCount.textContent = "字数: 0";
+      outputWordCount.textContent = "字数: 0";
+      inputArea.focus();
+    });
+  });
+} else {
+  // Node.js 环境下直接运行测试
+  runCleanerTests();
 }
