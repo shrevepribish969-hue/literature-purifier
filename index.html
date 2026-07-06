@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>文献净化工坊 🧪 - 拒绝学术复制乱码</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- 背景光晕 -->
+  <div class="glow-bg">
+    <div class="blob blob-purple"></div>
+    <div class="blob blob-cyan"></div>
+  </div>
+
+  <div class="app-container">
+    <header class="app-header">
+      <div class="brand">
+        <h1>文献净化工坊 <span>🧪</span></h1>
+        <p class="subtitle">实时净化文献复制乱码，还原流畅阅读体验</p>
+      </div>
+      <div class="header-actions">
+        <button id="btn-toggle-theme" class="btn-icon" title="切换主题">🌓</button>
+        <button id="btn-toggle-history" class="btn-icon" title="历史记录">⏳</button>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <!-- 输入面板 -->
+      <section class="panel-card" id="panel-input">
+        <div class="panel-header">
+          <h2>文献原始文本 (输入)</h2>
+          <span class="badge" id="input-word-count">字数: 0</span>
+        </div>
+        <textarea id="input-area" placeholder="在此处粘贴文献内容 (Ctrl + V)..."></textarea>
+        <div class="panel-footer">
+          <div class="control-group">
+            <span class="control-label">净化模式：</span>
+            <label class="radio-label"><input type="radio" name="purify-mode" id="mode-auto" value="auto" checked> 智能</label>
+            <label class="radio-label"><input type="radio" name="purify-mode" id="mode-zh" value="zh"> 中文</label>
+            <label class="radio-label"><input type="radio" name="purify-mode" id="mode-en" value="en"> 英文</label>
+          </div>
+          <button id="btn-clear" class="btn btn-secondary">清空</button>
+        </div>
+      </section>
+
+      <!-- 输出面板 -->
+      <section class="panel-card" id="panel-output">
+        <div class="panel-header">
+          <h2>净化后文本 (输出)</h2>
+          <span class="badge" id="output-word-count">字数: 0</span>
+        </div>
+        <textarea id="output-area" readonly placeholder="整理后的干净文本将实时显示在此处..."></textarea>
+        <div class="panel-footer">
+          <div class="control-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="switch-auto-copy" checked> 自动复制
+            </label>
+          </div>
+          <div class="button-group">
+            <button id="btn-translate-google" class="btn btn-secondary">谷歌翻译</button>
+            <button id="btn-translate-deepl" class="btn btn-secondary">DeepL</button>
+            <button id="btn-copy" class="btn btn-primary">一键复制</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- 历史记录侧边栏 -->
+    <aside class="history-drawer" id="history-drawer">
+      <div class="drawer-header">
+        <h3>历史记录 (最近10条)</h3>
+        <button id="btn-close-history" class="btn-close">&times;</button>
+      </div>
+      <div class="drawer-content">
+        <ul id="history-list">
+          <li class="empty-tip">暂无历史记录</li>
+        </ul>
+      </div>
+      <div class="drawer-footer">
+        <button id="btn-clear-history" class="btn btn-danger">清空所有历史</button>
+      </div>
+    </aside>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
