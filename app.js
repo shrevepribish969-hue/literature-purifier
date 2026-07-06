@@ -94,6 +94,20 @@ if (typeof window !== 'undefined') {
     const btnCopy = document.getElementById('btn-copy');
     const btnClear = document.getElementById('btn-clear');
     
+    // 头部及抽屉控制节点
+    const btnToggleTheme = document.getElementById('btn-toggle-theme');
+    const btnToggleHistory = document.getElementById('btn-toggle-history');
+    const drawer = document.getElementById('history-drawer');
+    const btnCloseHistory = document.getElementById('btn-close-history');
+    const historyList = document.getElementById('history-list');
+    const btnClearHistory = document.getElementById('btn-clear-history');
+    
+    // 翻译节点
+    const btnTranslateGoogle = document.getElementById('btn-translate-google');
+    const btnTranslateDeepl = document.getElementById('btn-translate-deepl');
+
+    let historyItems = JSON.parse(localStorage.getItem('purifier_history') || '[]');
+
     // 获取当前选中的模式
     function getSelectedMode() {
       return document.querySelector('input[name="purify-mode"]:checked').value;
@@ -115,6 +129,9 @@ if (typeof window !== 'undefined') {
       if (switchAutoCopy.checked && purified.trim() !== '') {
         performCopy(purified, true);
       }
+
+      // 添加历史记录
+      addHistoryItem(rawText);
     }
 
     // 复制逻辑
@@ -143,6 +160,46 @@ if (typeof window !== 'undefined') {
       });
     }
 
+    // 历史记录渲染
+    function updateHistoryUI() {
+      historyList.innerHTML = '';
+      if (historyItems.length === 0) {
+        historyList.innerHTML = '<li class="empty-tip" style="color: var(--text-sub); text-align: center; margin-top: 20px; list-style: none;">暂无历史记录</li>';
+        return;
+      }
+      historyItems.forEach((item) => {
+        const li = document.createElement('li');
+        li.style.cssText = 'padding: 12px; border-bottom: 1px solid var(--panel-border); cursor: pointer; transition: background 0.2s; border-radius: 8px; margin-bottom: 8px; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; list-style: none;';
+        li.addEventListener('mouseover', () => li.style.background = 'rgba(255,255,255,0.05)');
+        li.addEventListener('mouseout', () => li.style.background = 'transparent');
+        
+        const summary = item.length > 25 ? item.substring(0, 25) + '...' : item;
+        li.textContent = summary;
+        li.title = item;
+        
+        li.addEventListener('click', () => {
+          inputArea.value = item;
+          handleProcessing();
+          drawer.classList.remove('open');
+        });
+        historyList.appendChild(li);
+      });
+    }
+
+    // 新增历史记录（带防抖）
+    let saveTimeout = null;
+    function addHistoryItem(text) {
+      if (!text || text.trim() === '') return;
+      clearTimeout(saveTimeout);
+      saveTimeout = setTimeout(() => {
+        historyItems = historyItems.filter(item => item !== text);
+        historyItems.unshift(text);
+        if (historyItems.length > 10) historyItems.pop();
+        localStorage.setItem('purifier_history', JSON.stringify(historyItems));
+        updateHistoryUI();
+      }, 1000);
+    }
+
     // 事件绑定
     inputArea.addEventListener('input', handleProcessing);
     
@@ -163,6 +220,51 @@ if (typeof window !== 'undefined') {
       outputWordCount.textContent = "字数: 0";
       inputArea.focus();
     });
+
+    // 抽屉控制
+    btnToggleHistory.addEventListener('click', () => drawer.classList.add('open'));
+    btnCloseHistory.addEventListener('click', () => drawer.classList.remove('open'));
+    
+    // 清空历史
+    btnClearHistory.addEventListener('click', () => {
+      historyItems = [];
+      localStorage.removeItem('purifier_history');
+      updateHistoryUI();
+    });
+
+    // 主题切换
+    btnToggleTheme.addEventListener('click', () => {
+      const currentBg = document.documentElement.style.getPropertyValue('--bg-color');
+      if (currentBg === '#f8fafc') {
+        document.documentElement.style.setProperty('--bg-color', '#080b11');
+        document.documentElement.style.setProperty('--text-main', '#f1f5f9');
+        document.documentElement.style.setProperty('--text-sub', '#94a3b8');
+        document.documentElement.style.setProperty('--panel-bg', 'rgba(255, 255, 255, 0.03)');
+        document.documentElement.style.setProperty('--panel-border', 'rgba(255, 255, 255, 0.08)');
+      } else {
+        document.documentElement.style.setProperty('--bg-color', '#f8fafc');
+        document.documentElement.style.setProperty('--text-main', '#0f172a');
+        document.documentElement.style.setProperty('--text-sub', '#64748b');
+        document.documentElement.style.setProperty('--panel-bg', 'rgba(0, 0, 0, 0.02)');
+        document.documentElement.style.setProperty('--panel-border', 'rgba(0, 0, 0, 0.08)');
+      }
+    });
+
+    // 翻译链接绑定
+    btnTranslateGoogle.addEventListener('click', () => {
+      const text = outputArea.value;
+      if (text.trim() === '') return;
+      window.open(`https://translate.google.com/?sl=auto&tl=zh-CN&text=${encodeURIComponent(text)}&op=translate`, '_blank');
+    });
+
+    btnTranslateDeepl.addEventListener('click', () => {
+      const text = outputArea.value;
+      if (text.trim() === '') return;
+      window.open(`https://www.deepl.com/translator#auto/zh-cn/${encodeURIComponent(text)}`, '_blank');
+    });
+
+    // 初始化历史记录UI
+    updateHistoryUI();
   });
 } else {
   // Node.js 环境下直接运行测试
