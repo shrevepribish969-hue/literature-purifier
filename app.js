@@ -31,8 +31,11 @@ function purifyChinese(text) {
   // 0. 先将全角英文字母与数字转换为半角
   text = toDBC(text);
   
+  // 0.0 规范化换行符，统一将 Windows 的 \r\n 和 Mac 的 \r 替换为标准 \n，彻底消灭空白符差异
+  let normalizedText = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  
   // 0.1 核心压缩：将文本中所有的多空行合并/压缩为单换行，消除 PDF 假空行对段落划分的干扰
-  let cleanedText = text.replace(/\n\n+/g, "\n");
+  let cleanedText = normalizedText.replace(/\n\n+/g, "\n");
   
   // 1. 按换行分割成行
   const rawLines = cleanedText.split('\n');
@@ -68,8 +71,9 @@ function purifyChinese(text) {
     } else {
       let shouldBreak = false;
       
-      // 获取上一行的清洗后文本及最后一个字符
-      const prevLine = processedLines[i - 1] || "";
+      // 获取当前已构建段落的最后一物理行，确保合并后的长句子状态被正确识别，防止误判
+      const lastIdx = currentParagraph.lastIndexOf('\n');
+      const prevLine = lastIdx === -1 ? currentParagraph : currentParagraph.slice(lastIdx + 1);
       const lastChar = prevLine.slice(-1);
       
       // 智能分段判断规则：
@@ -112,8 +116,11 @@ function purifyEnglish(text) {
   // 1. 先将全角英文字母与数字转换为半角
   text = toDBC(text);
   
+  // 1.1 规范化换行符，防范 Windows 格式干扰
+  let normalizedText = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  
   // 2. 合并英文连字符 + 换行
-  let processed = text.replace(/(\w+)-\s*\n\s*(\w+)/g, "$1$2");
+  let processed = normalizedText.replace(/(\w+)-\s*\n\s*(\w+)/g, "$1$2");
   
   // 3. 保留双换行及以上作为段落分隔
   processed = processed.replace(/\n\n+/g, "【段落占位】");
@@ -171,6 +178,49 @@ function runCleanerTests() {
   const expectedDbc = "IACS 是一个非盈利专业组织，设立于 1971 年。";
   const resultDbc = purifyText(inputDbc, "zh");
   console.assert(resultDbc === expectedDbc, `[DBC] 预期:\n"${expectedDbc}"\n但得到:\n"${resultDbc}"`);
+
+  // 测试用例 5: 用户实测全部长文献（验证连贯性，防止被逗号拆断）
+  const inputUser = `１．中 心 定 位 及 与 大 学
+社区的关系
+ＩＡＣＳ规定 的 鉴 定 标 准
+主要体现 为 三 个 方 面：一 是
+心理 咨 询 中 心 在 行 政 和 管
+理上要保 持 中 立，不 能 被 其
+他行 政 部 门 限 制 其 应 有 功
+能而 影 响 学 生 进 行 心 理 求
+助。第二，心 理 咨 询 中 心 不
+是孤立的，它 需 要 与 学 校 的
+其他各个 部 门、学 生 社 区 和
+医疗 服 务 部 门 保 持 密 切 联
+系，建 立 网 络。第 三，心 理
+咨询 中 心 的 人 员 应 该 与 专
+职教 师 和 行 政 管 理 者 保 持
+协作状态，以 帮 助 学 生 在 校
+园里身心各方面的发展。
+伯 克 利 的 心 理 咨 询 中
+心隶 属 于 大 学 校 园 生 活 的
+二级单位 健 康 服 务 平 台，这
+个平 台 同 时 包 含 了 师 生 的
+身体 和 心 理 健 康 的 咨 询 和
+诊断，以 及 职 业 咨 询 等 广 泛
+的服 务 项 目。该 中 心 是 一
+个独 立 从 事 对 师 生 的 心 理
+健康 开 展 咨 询 和 协 助 的 单
+位，不属 于 任 何 研 究 或 者 教
+学单 位。但 这 绝 不 意 味 着
+中心 是 孤 立 的，恰 恰 相 反，
+咨询 中 心 的 工 作 与 学 校 有
+关部门紧 密 相 连，并 同 时 通
+过一 个 校 际 间 的 网 络 与 全
+校各部 门 保 持 协 作 和 联 系，
+咨询中心是通过设置在各学院、学生事务中心、学生社区中心等不同地方的卫星工作室加以实现的。值
+值得一提的是，中心同时与社区的社工组织中的专业咨询师建立了良好而密切的联系，可以及时进行转介
+等相关工作，这个联系工作由专人负责，至少每隔几周就确认以及更新社区咨询师资源的最新情况，确保
+了校内外的心理健康工作的积极有效协作。`;
+
+  console.log("---- 最终用户长文献实测排版 ----");
+  console.log(purifyText(inputUser, "zh"));
+  console.log("-------------------------------");
 
   console.log("✅ 所有核心算法测试完成！");
   console.groupEnd();
