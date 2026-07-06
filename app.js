@@ -1,6 +1,35 @@
+// 全角英文字母及数字转半角函数（保留中文特定标点）
+function toDBC(str) {
+  if (!str) return "";
+  let result = "";
+  for (let i = 0; i < str.length; i++) {
+    const code = str.charCodeAt(i);
+    if (code === 12288) { // 全角空格
+      result += String.fromCharCode(32);
+    } else if (code >= 65281 && code <= 65374) {
+      // 仅转换全角英文字母（Ａ-Ｚ、ａ-ｚ）与全角数字（０-９）
+      const isFullWidthLetterOrDigit = 
+        (code >= 65313 && code <= 65338) || 
+        (code >= 65345 && code <= 65370) || 
+        (code >= 65296 && code <= 65305);
+      if (isFullWidthLetterOrDigit) {
+        result += String.fromCharCode(code - 65248);
+      } else {
+        result += str.charAt(i);
+      }
+    } else {
+      result += str.charAt(i);
+    }
+  }
+  return result;
+}
+
 // 核心净化函数定义
 function purifyChinese(text) {
   if (!text) return "";
+  
+  // 0. 先将全角英文字母与数字转换为半角
+  text = toDBC(text);
   
   // 1. 按原始换行分割成行
   const rawLines = text.split('\n');
@@ -77,6 +106,8 @@ function purifyChinese(text) {
 
 function purifyEnglish(text) {
   if (!text) return "";
+  // 0. 先将全角英文字母与数字转换为半角
+  text = toDBC(text);
   // 1. 合并英文连字符 + 换行 (例如 hyphen-\nated 转换为 hyphenated)
   let processed = text.replace(/(\w+)-\s*\n\s*(\w+)/g, "$1$2");
   
@@ -130,6 +161,12 @@ function runCleanerTests() {
   
   const autoEn = purifyText("Sci-\nentific pa- \n per", "auto");
   console.assert(autoEn === "Scientific paper", "自动识别英文模式失败");
+
+  // 测试用例 4: 全角转半角与中英加空格
+  const inputDbc = "ＩＡＣＳ是一个非盈利专业组织，设立于１９７１年。";
+  const expectedDbc = "IACS 是一个非盈利专业组织，设立于 1971 年。";
+  const resultDbc = purifyText(inputDbc, "zh");
+  console.assert(resultDbc === expectedDbc, `[DBC] 预期:\n"${expectedDbc}"\n但得到:\n"${resultDbc}"`);
 
   console.log("✅ 所有核心算法测试完成！");
   console.groupEnd();
