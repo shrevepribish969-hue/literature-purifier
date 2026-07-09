@@ -233,6 +233,27 @@ if (typeof window !== 'undefined') {
   window.purifyText = purifyText;
 
   document.addEventListener('DOMContentLoaded', () => {
+    // 51.la 自定义打点辅助函数
+    function trackEvent(name, attrs = {}) {
+      if (typeof LA !== 'undefined' && typeof LA.track === 'function') {
+        try {
+          LA.track(name, attrs);
+        } catch (e) {
+          console.error("51.la tracking error:", e);
+        }
+      }
+    }
+    
+    // 输入净化防抖打点
+    let trackInputTimeout = null;
+    function triggerInputTrack(purifiedText) {
+      if (!purifiedText || purifiedText.trim() === '') return;
+      clearTimeout(trackInputTimeout);
+      trackInputTimeout = setTimeout(() => {
+        trackEvent('input_purified', { length: purifiedText.length });
+      }, 3000);
+    }
+
     const inputArea = document.getElementById('input-area');
     const outputArea = document.getElementById('output-area');
     const inputWordCount = document.getElementById('input-word-count');
@@ -279,6 +300,7 @@ if (typeof window !== 'undefined') {
 
       // 添加历史记录
       addHistoryItem(rawText);
+      triggerInputTrack(purified);
     }
 
     // 复制逻辑
@@ -288,6 +310,7 @@ if (typeof window !== 'undefined') {
         return;
       }
       navigator.clipboard.writeText(text).then(() => {
+        trackEvent('action_copy', { is_auto: isAuto });
         if (isAuto) {
           // 自动复制成功闪烁绿边框
           outputArea.classList.add('auto-copy-flash');
@@ -351,7 +374,10 @@ if (typeof window !== 'undefined') {
     inputArea.addEventListener('input', handleProcessing);
     
     document.querySelectorAll('input[name="purify-mode"]').forEach(radio => {
-      radio.addEventListener('change', handleProcessing);
+      radio.addEventListener('change', () => {
+        handleProcessing();
+        trackEvent('change_mode', { mode: radio.value });
+      });
     });
 
     btnCopy.addEventListener('click', () => {
@@ -361,6 +387,7 @@ if (typeof window !== 'undefined') {
     });
 
     btnClear.addEventListener('click', () => {
+      trackEvent('action_clear');
       inputArea.value = '';
       outputArea.value = '';
       inputWordCount.textContent = "字数: 0";
@@ -369,11 +396,15 @@ if (typeof window !== 'undefined') {
     });
 
     // 抽屉控制
-    btnToggleHistory.addEventListener('click', () => drawer.classList.add('open'));
+    btnToggleHistory.addEventListener('click', () => {
+      drawer.classList.add('open');
+      trackEvent('view_history');
+    });
     btnCloseHistory.addEventListener('click', () => drawer.classList.remove('open'));
     
     // 清空历史
     btnClearHistory.addEventListener('click', () => {
+      trackEvent('action_clear_history');
       historyItems = [];
       localStorage.removeItem('purifier_history');
       updateHistoryUI();
@@ -382,31 +413,37 @@ if (typeof window !== 'undefined') {
     // 主题切换
     btnToggleTheme.addEventListener('click', () => {
       const currentBg = document.documentElement.style.getPropertyValue('--bg-color');
+      let newTheme = 'dark';
       if (currentBg === '#f8fafc') {
         document.documentElement.style.setProperty('--bg-color', '#080b11');
         document.documentElement.style.setProperty('--text-main', '#f1f5f9');
         document.documentElement.style.setProperty('--text-sub', '#94a3b8');
         document.documentElement.style.setProperty('--panel-bg', 'rgba(255, 255, 255, 0.03)');
         document.documentElement.style.setProperty('--panel-border', 'rgba(255, 255, 255, 0.08)');
+        newTheme = 'dark';
       } else {
         document.documentElement.style.setProperty('--bg-color', '#f8fafc');
         document.documentElement.style.setProperty('--text-main', '#0f172a');
         document.documentElement.style.setProperty('--text-sub', '#64748b');
         document.documentElement.style.setProperty('--panel-bg', 'rgba(0, 0, 0, 0.02)');
         document.documentElement.style.setProperty('--panel-border', 'rgba(0, 0, 0, 0.08)');
+        newTheme = 'light';
       }
+      trackEvent('toggle_theme', { theme: newTheme });
     });
 
     // 翻译链接绑定
     btnTranslateGoogle.addEventListener('click', () => {
       const text = outputArea.value;
       if (text.trim() === '') return;
+      trackEvent('action_translate', { platform: 'google' });
       window.open(`https://translate.google.com/?sl=auto&tl=zh-CN&text=${encodeURIComponent(text)}&op=translate`, '_blank');
     });
 
     btnTranslateDeepl.addEventListener('click', () => {
       const text = outputArea.value;
       if (text.trim() === '') return;
+      trackEvent('action_translate', { platform: 'deepl' });
       window.open(`https://www.deepl.com/translator#auto/zh-cn/${encodeURIComponent(text)}`, '_blank');
     });
 

@@ -4,7 +4,382 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>文献净化工坊 🧪 - 拒绝学术复制乱码</title>
-  <link rel="stylesheet" href="styles.css">
+  <!-- 51.la 网站统计开始 -->
+  <script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-new.min.js"></script>
+  <script>
+    if (typeof LA !== 'undefined') {
+      LA.init({ id: "YOUR_51LA_ID", ck: "YOUR_51LA_CK" });
+    }
+  </script>
+  <!-- 51.la 网站统计结束 -->
+  <style>
+    :root {
+      --bg-color: #080b11;
+      --panel-bg: rgba(255, 255, 255, 0.03);
+      --panel-border: rgba(255, 255, 255, 0.08);
+      --text-main: #f1f5f9;
+      --text-sub: #94a3b8;
+      --primary-color: #3b82f6;
+      --primary-hover: #2563eb;
+      --success-color: #10b981;
+      --danger-color: #ef4444;
+      --font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    /* 基础设置 */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      font-family: var(--font-family);
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    /* 炫酷背景光晕 */
+    .glow-bg {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: -1;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(150px);
+      opacity: 0.15;
+      animation: float 20s infinite alternate;
+    }
+
+    .blob-purple {
+      width: 500px;
+      height: 500px;
+      background-color: #8b5cf6;
+      top: -10%;
+      right: 10%;
+    }
+
+    .blob-cyan {
+      width: 600px;
+      height: 600px;
+      background-color: #06b6d4;
+      bottom: -10%;
+      left: 5%;
+      animation-delay: -10s;
+    }
+
+    @keyframes float {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(50px, 50px) scale(1.1); }
+    }
+
+    /* 布局结构 */
+    .app-container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .app-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .brand h1 {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    .brand h1 span {
+      font-size: 22px;
+    }
+
+    .brand .subtitle {
+      color: var(--text-sub);
+      font-size: 14px;
+      margin-top: 4px;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 12px;
+    }
+
+    .btn-icon {
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      color: var(--text-main);
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 18px;
+      transition: all 0.3s ease;
+    }
+
+    .btn-icon:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.2);
+      transform: translateY(-2px);
+    }
+
+    /* 主工作台（大屏左右分栏） */
+    .workspace {
+      display: flex;
+      flex: 1;
+      gap: 24px;
+      min-height: 0;
+    }
+
+    .panel-card {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 16px;
+      backdrop-filter: blur(16px);
+      padding: 20px;
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+      transition: border-color 0.3s, box-shadow 0.3s;
+    }
+
+    .panel-card:hover {
+      border-color: rgba(255, 255, 255, 0.15);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .panel-header h2 {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .badge {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--panel-border);
+      border-radius: 20px;
+      padding: 4px 10px;
+      font-size: 12px;
+      color: var(--text-sub);
+    }
+
+    /* 文本域 */
+    textarea {
+      flex: 1;
+      width: 100%;
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid var(--panel-border);
+      border-radius: 12px;
+      color: var(--text-main);
+      padding: 16px;
+      font-size: 15px;
+      line-height: 1.6;
+      resize: none;
+      outline: none;
+      font-family: inherit;
+      transition: all 0.3s ease;
+    }
+
+    textarea:focus {
+      border-color: var(--primary-color);
+      background: rgba(0, 0, 0, 0.3);
+    }
+
+    .panel-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 16px;
+    }
+
+    /* 控制按钮与选项 */
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 14px;
+    }
+
+    .control-label {
+      color: var(--text-sub);
+    }
+
+    .radio-label, .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      user-select: none;
+      color: var(--text-main);
+    }
+
+    .button-group {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn {
+      border: 1px solid transparent;
+      border-radius: 10px;
+      padding: 8px 16px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .btn-primary {
+      background: var(--primary-color);
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--panel-border);
+      color: var(--text-main);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-success {
+      background: var(--success-color) !important;
+      color: white;
+    }
+
+    .btn-danger {
+      background: var(--danger-color);
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background: #dc2626;
+    }
+
+    /* 自动复制时的绿边框闪烁 */
+    .auto-copy-flash {
+      animation: border-flash-success 1s ease;
+    }
+
+    @keyframes border-flash-success {
+      0% { border-color: var(--panel-border); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+      30% { border-color: var(--success-color); box-shadow: 0 0 10px 0 rgba(16, 185, 129, 0.4); }
+      100% { border-color: var(--panel-border); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+
+    /* 抽屉侧边栏样式 */
+    .history-drawer {
+      position: fixed;
+      top: 0;
+      right: -360px;
+      width: 340px;
+      height: 100vh;
+      background: rgba(13, 17, 23, 0.85);
+      backdrop-filter: blur(20px);
+      border-left: 1px solid var(--panel-border);
+      box-shadow: -10px 0 30px rgba(0, 0, 0, 0.3);
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .history-drawer.open {
+      right: 0;
+    }
+
+    .drawer-header {
+      padding: 20px;
+      border-bottom: 1px solid var(--panel-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .btn-close {
+      background: none;
+      border: none;
+      color: var(--text-sub);
+      font-size: 24px;
+      cursor: pointer;
+    }
+
+    .drawer-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+    }
+
+    .drawer-footer {
+      padding: 20px;
+      border-top: 1px solid var(--panel-border);
+    }
+
+    /* 响应式断点（窄屏自动转上下折叠，适应看文献分屏） */
+    @media (max-width: 900px) {
+      .app-container {
+        padding: 12px;
+        height: auto;
+        min-height: 100vh;
+      }
+      .workspace {
+        flex-direction: column;
+        overflow-y: visible;
+      }
+      .panel-card {
+        min-height: 380px;
+      }
+      .btn {
+        padding: 6px 12px;
+        font-size: 13px;
+      }
+      .panel-footer {
+        flex-direction: column;
+        gap: 12px;
+        align-items: flex-start;
+      }
+      .panel-footer .button-group {
+        width: 100%;
+        justify-content: flex-end;
+      }
+    }
+  </style>
 </head>
 <body>
   <!-- 背景光晕 -->
@@ -83,6 +458,340 @@
     </aside>
   </div>
 
-  <script src="app.js?v=20260706"></script>
+  <script>
+    // 全角英文字母及数字转半角函数（保留中文特定标点）
+    function toDBC(str) {
+      if (!str) return "";
+      let result = "";
+      for (let i = 0; i < str.length; i++) {
+        const code = str.charCodeAt(i);
+        if (code === 12288) { // 全角空格
+          result += String.fromCharCode(32);
+        } else if (code >= 65281 && code <= 65374) {
+          // 仅转换全角英文字母（Ａ-Ｚ、ａ-ｚ）与全角数字（０-９）
+          const isFullWidthLetterOrDigit = 
+            (code >= 65313 && code <= 65338) || 
+            (code >= 65345 && code <= 65370) || 
+            (code >= 65296 && code <= 65305);
+          if (isFullWidthLetterOrDigit) {
+            result += String.fromCharCode(code - 65248);
+          } else {
+            result += str.charAt(i);
+          }
+        } else {
+          result += str.charAt(i);
+        }
+      }
+      return result;
+    }
+
+    // 核心净化函数定义
+    function purifyChinese(text) {
+      if (!text) return "";
+      
+      // 0. 先将全角英文字母与数字转换为半角
+      text = toDBC(text);
+      
+      // 0.0 规范化换行符，统一将 Windows 的 \r\n 和 Mac 的 \r 替换为标准 \n，彻底消灭空白符差异
+      let normalizedText = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+      
+      // 0.1 核心压缩：将文本中所有的多空行合并/压缩为单换行，消除 PDF 假空行对段落划分的干扰
+      let cleanedText = normalizedText.replace(/\n\n+/g, "\n");
+      
+      // 1. 按换行分割成行
+      const rawLines = cleanedText.split('\n');
+      const processedLines = [];
+      
+      // 2. 清理每行内的多余空格
+      for (let i = 0; i < rawLines.length; i++) {
+        let line = rawLines[i].trim();
+        
+        // 去除汉字/中文标点之间的莫名空格
+        line = line.replace(/(?<=[\u4e00-\u9fa5\u3000-\u303f\uff00-\uffef])\s+(?=[\u4e00-\u9fa5\u3000-\u303f\uff00-\uffef])/g, "");
+        
+        // 自动将空格隔开的独立英文大写/小写字母缩写进行合并（如 I A C S -> IACS, U N I V E R S I T Y -> UNIVERSITY）
+        line = line.replace(/\b([a-zA-Z])\s+(?=[a-zA-Z]\b)/g, "$1");
+        
+        // 中英文边界处规范化地加单个空格
+        line = line.replace(/([\u4e00-\u9fa5])([a-zA-Z0-9])/g, "$1 $2");
+        line = line.replace(/([a-zA-Z0-9])([\u4e00-\u9fa5])/g, "$1 $2");
+        
+        processedLines.push(line);
+      }
+      
+      const paragraphs = [];
+      let currentParagraph = "";
+      
+      for (let i = 0; i < processedLines.length; i++) {
+        const line = processedLines[i];
+        
+        if (line === "") continue;
+        
+        if (currentParagraph === "") {
+          currentParagraph = line;
+        } else {
+          let shouldBreak = false;
+          
+          // 获取当前已构建段落的最后一物理行，确保合并后的长句子状态被正确识别，防止误判
+          const lastIdx = currentParagraph.lastIndexOf('\n');
+          const prevLine = lastIdx === -1 ? currentParagraph : currentParagraph.slice(lastIdx + 1);
+          const lastChar = prevLine.slice(-1);
+          
+          // 智能分段判断规则：
+          // 1. 上一行以句末标点结尾（允许后面带类似 [1] 的引用标号），且整行长度较短（小于 35 个字），极有可能是段落结束
+          if (/([。？！?!；;]|\.\s*)\s*(?:\[\d+\])?$/.test(prevLine) && prevLine.length < 35) {
+            shouldBreak = true;
+          }
+          // 2. 上一行极短（小于 15 个字），且该行不包含任何主要句中/句末标点
+          // 安全锁：如果当前行开头 6 个字内就含有句末/句中主要标点（例如：“助。第二” 里的 “。”），说明上一行只是句尾折断，不能当作标题，不予断开！
+          else if (prevLine.length < 15 && 
+                   !/[，。？！、：；,.:;!?]/.test(prevLine) && 
+                   !/[，。？！、：；,.:;!?]/.test(line.substring(0, 6))) {
+            shouldBreak = true;
+          }
+          // 3. 当前行本身是以明显的段落/列表标记、或者标题序号开头
+          // 例如：“（一）”、“一、”、“1.”、“[1]”、“-”、“•” 等
+          else if (/^(?:[（\(][一二三四五六七八九十0-9]+[）\)]|[一二三四五六七八九十]+[、]|[0-9]+[\.、]|[-•●\*]|\u25cf)/.test(line)) {
+            shouldBreak = true;
+          }
+          
+          if (shouldBreak) {
+            paragraphs.push(currentParagraph);
+            currentParagraph = line;
+          } else {
+            // 合并：中文字符之间不加换行和空格
+            currentParagraph += line;
+          }
+        }
+      }
+      
+      if (currentParagraph !== "") {
+        paragraphs.push(currentParagraph);
+      }
+      
+      return paragraphs.join("\n\n");
+    }
+
+    function purifyEnglish(text) {
+      if (!text) return "";
+      text = toDBC(text);
+      let normalizedText = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+      let processed = normalizedText.replace(/(\w+)-\s*\n\s*(\w+)/g, "$1$2");
+      processed = processed.replace(/\n\n+/g, "【段落占位】");
+      processed = processed.replace(/\n/g, " ");
+      processed = processed.replace(/\s{2,}/g, " ");
+      processed = processed.replace(/【段落占位】/g, "\n\n");
+      return processed.trim();
+    }
+
+    function purifyText(text, mode) {
+      if (!text) return "";
+      if (mode === "zh") return purifyChinese(text);
+      if (mode === "en") return purifyEnglish(text);
+      const chineseChars = text.match(/[\u4e00-\u9fa5]/g);
+      const totalLength = text.length;
+      const chineseRatio = chineseChars ? (chineseChars.length / totalLength) : 0;
+      return chineseRatio > 0.1 ? purifyChinese(text) : purifyEnglish(text);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      // 51.la 自定义打点辅助函数
+      function trackEvent(name, attrs = {}) {
+        if (typeof LA !== 'undefined' && typeof LA.track === 'function') {
+          try {
+            LA.track(name, attrs);
+          } catch (e) {
+            console.error("51.la tracking error:", e);
+          }
+        }
+      }
+      
+      // 输入净化防抖打点
+      let trackInputTimeout = null;
+      function triggerInputTrack(purifiedText) {
+        if (!purifiedText || purifiedText.trim() === '') return;
+        clearTimeout(trackInputTimeout);
+        trackInputTimeout = setTimeout(() => {
+          trackEvent('input_purified', { length: purifiedText.length });
+        }, 3000);
+      }
+
+      const inputArea = document.getElementById('input-area');
+      const outputArea = document.getElementById('output-area');
+      const inputWordCount = document.getElementById('input-word-count');
+      const outputWordCount = document.getElementById('output-word-count');
+      const switchAutoCopy = document.getElementById('switch-auto-copy');
+      const btnCopy = document.getElementById('btn-copy');
+      const btnClear = document.getElementById('btn-clear');
+      
+      const btnToggleTheme = document.getElementById('btn-toggle-theme');
+      const btnToggleHistory = document.getElementById('btn-toggle-history');
+      const drawer = document.getElementById('history-drawer');
+      const btnCloseHistory = document.getElementById('btn-close-history');
+      const historyList = document.getElementById('history-list');
+      const btnClearHistory = document.getElementById('btn-clear-history');
+      
+      const btnTranslateGoogle = document.getElementById('btn-translate-google');
+      const btnTranslateDeepl = document.getElementById('btn-translate-deepl');
+
+      let historyItems = JSON.parse(localStorage.getItem('purifier_history') || '[]');
+
+      function getSelectedMode() {
+        return document.querySelector('input[name="purify-mode"]:checked').value;
+      }
+
+      function handleProcessing() {
+        const rawText = inputArea.value;
+        const mode = getSelectedMode();
+        const purified = purifyText(rawText, mode);
+        
+        outputArea.value = purified;
+        inputWordCount.textContent = `字数: ${rawText.length}`;
+        outputWordCount.textContent = `字数: ${purified.length}`;
+        
+        if (switchAutoCopy.checked && purified.trim() !== '') {
+          performCopy(purified, true);
+        }
+        addHistoryItem(rawText);
+        triggerInputTrack(purified);
+      }
+
+      function performCopy(text, isAuto = false) {
+        if (!navigator.clipboard) {
+          if (!isAuto) alert("当前环境不支持 Clipboard API，请手动复制右侧框中文本。");
+          return;
+        }
+        navigator.clipboard.writeText(text).then(() => {
+          trackEvent('action_copy', { is_auto: isAuto });
+          if (isAuto) {
+            outputArea.classList.add('auto-copy-flash');
+            setTimeout(() => outputArea.classList.remove('auto-copy-flash'), 1000);
+          } else {
+            const oldText = btnCopy.textContent;
+            btnCopy.textContent = "已复制！";
+            btnCopy.classList.add('btn-success');
+            setTimeout(() => {
+              btnCopy.textContent = oldText;
+              btnCopy.classList.remove('btn-success');
+            }, 1500);
+          }
+        }).catch(err => {
+          console.error("复制失败:", err);
+        });
+      }
+
+      function updateHistoryUI() {
+        historyList.innerHTML = '';
+        if (historyItems.length === 0) {
+          historyList.innerHTML = '<li class="empty-tip" style="color: var(--text-sub); text-align: center; margin-top: 20px; list-style: none;">暂无历史记录</li>';
+          return;
+        }
+        historyItems.forEach((item) => {
+          const li = document.createElement('li');
+          li.style.cssText = 'padding: 12px; border-bottom: 1px solid var(--panel-border); cursor: pointer; transition: background 0.2s; border-radius: 8px; margin-bottom: 8px; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; list-style: none;';
+          li.addEventListener('mouseover', () => li.style.background = 'rgba(255,255,255,0.05)');
+          li.addEventListener('mouseout', () => li.style.background = 'transparent');
+          
+          const summary = item.length > 25 ? item.substring(0, 25) + '...' : item;
+          li.textContent = summary;
+          li.title = item;
+          
+          li.addEventListener('click', () => {
+            inputArea.value = item;
+            handleProcessing();
+            drawer.classList.remove('open');
+          });
+          historyList.appendChild(li);
+        });
+      }
+
+      let saveTimeout = null;
+      function addHistoryItem(text) {
+        if (!text || text.trim() === '') return;
+        clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(() => {
+          historyItems = historyItems.filter(item => item !== text);
+          historyItems.unshift(text);
+          if (historyItems.length > 10) historyItems.pop();
+          localStorage.setItem('purifier_history', JSON.stringify(historyItems));
+          updateHistoryUI();
+        }, 1000);
+      }
+
+      inputArea.addEventListener('input', handleProcessing);
+      
+      document.querySelectorAll('input[name="purify-mode"]').forEach(radio => {
+        radio.addEventListener('change', () => {
+          handleProcessing();
+          trackEvent('change_mode', { mode: radio.value });
+        });
+      });
+
+      btnCopy.addEventListener('click', () => {
+        if (outputArea.value.trim() !== '') {
+          performCopy(outputArea.value, false);
+        }
+      });
+
+      btnClear.addEventListener('click', () => {
+        trackEvent('action_clear');
+        inputArea.value = '';
+        outputArea.value = '';
+        inputWordCount.textContent = "字数: 0";
+        outputWordCount.textContent = "字数: 0";
+        inputArea.focus();
+      });
+
+      btnToggleHistory.addEventListener('click', () => {
+        drawer.classList.add('open');
+        trackEvent('view_history');
+      });
+      btnCloseHistory.addEventListener('click', () => drawer.classList.remove('open'));
+      
+      btnClearHistory.addEventListener('click', () => {
+        trackEvent('action_clear_history');
+        historyItems = [];
+        localStorage.removeItem('purifier_history');
+        updateHistoryUI();
+      });
+
+      btnToggleTheme.addEventListener('click', () => {
+        const currentBg = document.documentElement.style.getPropertyValue('--bg-color');
+        let newTheme = 'dark';
+        if (currentBg === '#f8fafc') {
+          document.documentElement.style.setProperty('--bg-color', '#080b11');
+          document.documentElement.style.setProperty('--text-main', '#f1f5f9');
+          document.documentElement.style.setProperty('--text-sub', '#94a3b8');
+          document.documentElement.style.setProperty('--panel-bg', 'rgba(255, 255, 255, 0.03)');
+          document.documentElement.style.setProperty('--panel-border', 'rgba(255, 255, 255, 0.08)');
+          newTheme = 'dark';
+        } else {
+          document.documentElement.style.setProperty('--bg-color', '#f8fafc');
+          document.documentElement.style.setProperty('--text-main', '#0f172a');
+          document.documentElement.style.setProperty('--text-sub', '#64748b');
+          document.documentElement.style.setProperty('--panel-bg', 'rgba(0, 0, 0, 0.02)');
+          document.documentElement.style.setProperty('--panel-border', 'rgba(0, 0, 0, 0.08)');
+          newTheme = 'light';
+        }
+        trackEvent('toggle_theme', { theme: newTheme });
+      });
+
+      btnTranslateGoogle.addEventListener('click', () => {
+        const text = outputArea.value;
+        if (text.trim() === '') return;
+        trackEvent('action_translate', { platform: 'google' });
+        window.open(`https://translate.google.com/?sl=auto&tl=zh-CN&text=${encodeURIComponent(text)}&op=translate`, '_blank');
+      });
+
+      btnTranslateDeepl.addEventListener('click', () => {
+        const text = outputArea.value;
+        if (text.trim() === '') return;
+        trackEvent('action_translate', { platform: 'deepl' });
+        window.open(`https://www.deepl.com/translator#auto/zh-cn/${encodeURIComponent(text)}`, '_blank');
+      });
+
+      updateHistoryUI();
+    });
+  </script>
 </body>
 </html>
